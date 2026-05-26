@@ -73,7 +73,7 @@ def load_sample_data() -> None:
     client = chromadb.HttpClient(host=CHROMA_HOST, port=CHROMA_PORT)
 
     collections = client.list_collections()
-    collection_exists = any(c.name == COLLECTION_NAME for c in collections)
+    collection_exists = COLLECTION_NAME in collections
 
     if collection_exists:
         existing = client.get_collection(name=COLLECTION_NAME)

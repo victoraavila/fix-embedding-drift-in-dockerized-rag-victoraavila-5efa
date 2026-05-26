@@ -50,7 +50,7 @@ def main():
     client = chromadb.HttpClient(host=CHROMA_HOST, port=CHROMA_PORT)
 
     collections = client.list_collections()
-    if not any(c.name == COLLECTION_NAME for c in collections):
+    if COLLECTION_NAME not in collections:
         print(f"[re-embed] Collection '{COLLECTION_NAME}' does not exist. Nothing to re-embed.")
         return
 
