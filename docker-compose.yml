@@ -1,0 +1,50 @@
+services:
+  chromadb:
+    image: chromadb/chroma:0.5.23
+    container_name: chromadb
+    ports:
+      - "8001:8000"  # host 8001 -> container 8000
+    volumes:
+      - chroma_data:/data
+    environment:
+      - IS_PERSISTENT=TRUE
+      - PERSIST_DIRECTORY=/data
+      - ANONYMIZED_TELEMETRY=FALSE
+      - CHROMA_INIT_MAX_RETRIES=60
+      - CHROMA_INIT_SLEEP_SECONDS=3
+    restart: unless-stopped
+
+  chroma-init:
+    build:
+      context: .
+      dockerfile: Dockerfile.init
+    container_name: chroma-init
+    depends_on:
+      - chromadb
+    environment:
+      - CHROMA_HOST=chromadb
+      - CHROMA_PORT=8000
+    volumes:
+      - ./init-scripts:/app/init-scripts:ro
+    command: python /app/init-scripts/load_data.py
+    restart: "no"
+
+  rag-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rag-app
+    depends_on:
+      - chromadb
+      - chroma-init
+    ports:
+      - "8000:8000"
+    environment:
+      - CHROMA_HOST=chromadb
+      - CHROMA_PORT=8000
+    volumes:
+      - ./src:/app/src:ro
+    restart: unless-stopped
+
+volumes:
+  chroma_data:

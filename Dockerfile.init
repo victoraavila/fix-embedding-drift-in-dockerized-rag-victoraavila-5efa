@@ -1,0 +1,14 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install minimal Python dependencies for initialization
+COPY requirements.txt .
+RUN pip install --no-cache-dir \
+    "chromadb>=0.5.23,<1.0.0" \
+    "requests>=2.31.0,<3.0.0" \
+    "python-dotenv>=1.0.0,<2.0.0"
+
+COPY init-scripts/ /app/init-scripts/
+
+CMD ["python", "/app/init-scripts/load_data.py"]

@@ -1,0 +1,127 @@
+[
+  {
+    "id": 1,
+    "text": "Utkrusht is a proof-of-skills marketplace that helps agile teams rapidly find talent with strong fundamental concepts. It focuses on domains like AI, ML, full-stack development, high-scale distributed systems, and DevOps.",
+    "metadata": {"source": "overview", "topic": "company"}
+  },
+  {
+    "id": 2,
+    "text": "A proof-of-skills marketplace prioritizes demonstrable ability over traditional credentials. Candidates complete hands-on assessments that mirror real-world work scenarios.",
+    "metadata": {"source": "overview", "topic": "concepts"}
+  },
+  {
+    "id": 3,
+    "text": "Utkrusht assessments are designed around realistic tasks such as debugging containerized RAG systems, optimizing retrieval pipelines, and improving deployment robustness.",
+    "metadata": {"source": "assessments", "topic": "design"}
+  },
+  {
+    "id": 4,
+    "text": "For early-career engineers, Utkrusht focuses on core skills like Docker fundamentals, basic Retrieval-Augmented Generation patterns, and working with vector databases such as ChromaDB.",
+    "metadata": {"source": "assessments", "topic": "junior"}
+  },
+  {
+    "id": 5,
+    "text": "Retrieval-Augmented Generation (RAG) combines a retriever that searches a knowledge base with a generator that produces answers grounded in retrieved context.",
+    "metadata": {"source": "rag_basics", "topic": "rag"}
+  },
+  {
+    "id": 6,
+    "text": "ChromaDB is an open-source vector database used by Utkrusht to store document embeddings. It supports similarity search over text chunks and is well-suited for RAG applications.",
+    "metadata": {"source": "rag_basics", "topic": "chromadb"}
+  },
+  {
+    "id": 7,
+    "text": "In Utkrusht's architecture, ChromaDB runs in a Docker container with a persistent volume mounted at /data so that embeddings survive container restarts and upgrades.",
+    "metadata": {"source": "architecture", "topic": "docker"}
+  },
+  {
+    "id": 8,
+    "text": "The RAG application connects to ChromaDB over the Docker network using the service name 'chromadb' on port 8000. On the host, ChromaDB is exposed via port 8001 for debugging.",
+    "metadata": {"source": "architecture", "topic": "networking"}
+  },
+  {
+    "id": 9,
+    "text": "To reduce dependencies, Utkrusht uses ChromaDB's built-in default embedding function in some RAG stacks, avoiding heavy external models while still enabling basic semantic search.",
+    "metadata": {"source": "architecture", "topic": "embeddings"}
+  },
+  {
+    "id": 10,
+    "text": "Historically, when Utkrusht changed from one sentence-transformers model to another, the stored vectors in ChromaDB were not refreshed, leading to degraded retrieval quality and confusing answers.",
+    "metadata": {"source": "postmortem", "topic": "embedding_drift"}
+  },
+  {
+    "id": 11,
+    "text": "To prevent embedding drift, teams should ensure that any change to embedding configuration is accompanied by a controlled process to re-embed or refresh the underlying corpus stored in the vector database.",
+    "metadata": {"source": "postmortem", "topic": "best_practices"}
+  },
+  {
+    "id": 12,
+    "text": "A basic RAG flow at Utkrusht consists of: chunking documents, encoding them into embeddings, storing them in ChromaDB, retrieving top-k matches for a query, and composing an answer from the retrieved context.",
+    "metadata": {"source": "rag_basics", "topic": "pipeline"}
+  },
+  {
+    "id": 13,
+    "text": "Docker best practices include using slim base images, minimizing layers, caching dependency installation, and using .dockerignore to avoid copying unnecessary files into the image.",
+    "metadata": {"source": "devops", "topic": "docker"}
+  },
+  {
+    "id": 14,
+    "text": "Utkrusht's RAG tasks often require candidates to reason about how ChromaDB is deployed via Docker, how the app connects to it, and how data initialization is handled before queries are served.",
+    "metadata": {"source": "assessments", "topic": "tasks"}
+  },
+  {
+    "id": 15,
+    "text": "The initialization service in this architecture populates ChromaDB with Utkrusht documentation chunks before the main RAG application starts handling traffic.",
+    "metadata": {"source": "architecture", "topic": "init_service"}
+  },
+  {
+    "id": 16,
+    "text": "Utkrusht's documentation explains that engineers with 1-2 years of experience are expected to implement and troubleshoot basic RAG features under supervision, not design complex retrieval architectures.",
+    "metadata": {"source": "roles", "topic": "expectations"}
+  },
+  {
+    "id": 17,
+    "text": "When debugging RAG retrieval quality, it is helpful to log retrieved document IDs, sources, and similarity scores to see whether the system is selecting appropriate context.",
+    "metadata": {"source": "postmortem", "topic": "observability"}
+  },
+  {
+    "id": 18,
+    "text": "Utkrusht emphasises that RAG systems should degrade gracefully: if no relevant documents are found, the service should clearly state that rather than fabricating an answer.",
+    "metadata": {"source": "principles", "topic": "hallucinations"}
+  },
+  {
+    "id": 19,
+    "text": "Candidates are allowed to use external AI tools during Utkrusht tasks, but the underlying assessment infrastructure must not depend on external API keys to remain reproducible.",
+    "metadata": {"source": "policies", "topic": "ai_usage"}
+  },
+  {
+    "id": 20,
+    "text": "Utkrusht uses recall@k and qualitative spot checks over sample queries to evaluate whether a RAG pipeline is retrieving relevant documents for its domain.",
+    "metadata": {"source": "evaluation", "topic": "metrics"}
+  },
+  {
+    "id": 21,
+    "text": "The documentation assistant focuses on questions such as how assessments are built, what skills are evaluated, and how results are interpreted by hiring teams.",
+    "metadata": {"source": "product", "topic": "assistant_scope"}
+  },
+  {
+    "id": 22,
+    "text": "ChromaDB collections in Utkrusht's systems often store metadata like 'source', 'topic', and 'role_level' to support filtered retrieval or better auditability.",
+    "metadata": {"source": "architecture", "topic": "metadata"}
+  },
+  {
+    "id": 23,
+    "text": "A typical junior engineer task is to wire up an existing ChromaDB deployment into a FastAPI service, ensuring environment variables like CHROMA_HOST and CHROMA_PORT are used correctly.",
+    "metadata": {"source": "roles", "topic": "junior_tasks"}
+  },
+  {
+    "id": 24,
+    "text": "To keep RAG systems maintainable, Utkrusht encourages separating initialization concerns (data loading) from the main application logic, often via a dedicated initialization container.",
+    "metadata": {"source": "architecture", "topic": "separation_of_concerns"}
+  },
+  {
+    "id": 25,
+    "text": "When embedding models or configuration change, Utkrusht recommends having a documented procedure or automated path to refresh stored vectors so that retrieval remains aligned with current settings.",
+    "metadata": {"source": "postmortem", "topic": "refresh_procedure"}
+  }
+]
