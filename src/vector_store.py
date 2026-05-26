@@ -4,6 +4,7 @@ from typing import Any, Dict
 
 import chromadb
 import requests
+from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
 
 from .config import (
     CHROMA_HOST,
@@ -12,6 +13,9 @@ from .config import (
     CHROMA_RETRY_ATTEMPTS,
     CHROMA_RETRY_SLEEP_SECONDS,
 )
+
+EMBEDDING_MODEL = "sentence-transformers/all-mpnet-base-v2"
+embedding_function = SentenceTransformerEmbeddingFunction(model_name=EMBEDDING_MODEL)
 
 
 def _wait_for_chromadb() -> None:
@@ -43,7 +47,7 @@ def get_client() -> chromadb.HttpClient:
 def get_collection() -> Any:
     """Get or create the main collection used by the RAG app."""
     client = get_client()
-    return client.get_or_create_collection(name=COLLECTION_NAME)
+    return client.get_or_create_collection(name=COLLECTION_NAME, embedding_function=embedding_function)
 
 
 def ensure_collection_has_data(min_docs: int = 1) -> bool:

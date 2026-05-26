@@ -5,7 +5,11 @@ from pathlib import Path
 
 import chromadb
 import requests
+from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
 
+
+EMBEDDING_MODEL = "sentence-transformers/all-mpnet-base-v2"
+embedding_function = SentenceTransformerEmbeddingFunction(model_name=EMBEDDING_MODEL)
 
 CHROMA_HOST = os.getenv("CHROMA_HOST", "chromadb")
 CHROMA_PORT = int(os.getenv("CHROMA_PORT", "8000"))
@@ -42,7 +46,7 @@ def wait_for_chromadb() -> None:
 
 def load_sample_data() -> None:
     client = chromadb.HttpClient(host=CHROMA_HOST, port=CHROMA_PORT)
-    collection = client.get_or_create_collection(name=COLLECTION_NAME)
+    collection = client.get_or_create_collection(name=COLLECTION_NAME, embedding_function=embedding_function)
 
     # Idempotency: if the collection already has data, do not duplicate.
     try:

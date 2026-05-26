@@ -6,6 +6,7 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir \
     "chromadb>=0.5.23,<1.0.0" \
+    "sentence-transformers>=2.2.0,<3.0.0" \
     "requests>=2.31.0,<3.0.0" \
     "python-dotenv>=1.0.0,<2.0.0"
 
