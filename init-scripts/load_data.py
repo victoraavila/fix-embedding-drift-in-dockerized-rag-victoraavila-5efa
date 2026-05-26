@@ -8,7 +8,7 @@ import requests
 from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
 
 
-EMBEDDING_MODEL = "sentence-transformers/all-mpnet-base-v2"
+EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "sentence-transformers/all-mpnet-base-v2")
 embedding_function = SentenceTransformerEmbeddingFunction(model_name=EMBEDDING_MODEL)
 
 CHROMA_HOST = os.getenv("CHROMA_HOST", "chromadb")
@@ -44,19 +44,70 @@ def wait_for_chromadb() -> None:
     )
 
 
+def re_embed_collection(client: chromadb.HttpClient) -> None:
+    existing = client.get_collection(name=COLLECTION_NAME)
+    data = existing.get(include=["documents", "metadatas"])
+    ids = data["ids"]
+    documents = data["documents"]
+    metadatas = data["metadatas"]
+
+    if not ids:
+        print(f"[chroma-init] Collection '{COLLECTION_NAME}' is empty — nothing to re-embed.")
+        return
+
+    print(f"[chroma-init] Re-embedding {len(ids)} documents from model to '{EMBEDDING_MODEL}'...")
+    client.delete_collection(name=COLLECTION_NAME)
+    new_collection = client.create_collection(
+        name=COLLECTION_NAME,
+        embedding_function=embedding_function,
+        metadata={"embedding_model": EMBEDDING_MODEL},
+    )
+    new_collection.add(ids=ids, documents=documents, metadatas=metadatas)
+    print(f"[chroma-init] Re-embedded {len(ids)} documents with '{EMBEDDING_MODEL}'.")
+
+    test_results = new_collection.query(query_texts=["proof-of-skills marketplace"], n_results=2)
+    print(f"[chroma-init] Post re-embed verification query returned: {test_results.get('ids')}")
+
+
 def load_sample_data() -> None:
     client = chromadb.HttpClient(host=CHROMA_HOST, port=CHROMA_PORT)
-    collection = client.get_or_create_collection(name=COLLECTION_NAME, embedding_function=embedding_function)
 
-    # Idempotency: if the collection already has data, do not duplicate.
-    try:
-        existing_count = collection.count()
-    except Exception:
-        existing_count = len(collection.get(limit=1).get("ids", []))
+    collections = client.list_collections()
+    collection_exists = any(c.name == COLLECTION_NAME for c in collections)
 
-    if existing_count > 0:
-        print(f"[chroma-init] Collection '{COLLECTION_NAME}' already has data (count ~ {existing_count}). Skipping load.")
-        return
+    if collection_exists:
+        existing = client.get_collection(name=COLLECTION_NAME)
+        stored_model = existing.metadata.get("embedding_model") if existing.metadata else None
+
+        if stored_model and stored_model != EMBEDDING_MODEL:
+            print(
+                f"[chroma-init] Embedding drift detected: stored model='{stored_model}', "
+                f"configured model='{EMBEDDING_MODEL}'. Re-embedding..."
+            )
+            re_embed_collection(client)
+            return
+
+        count = existing.count()
+        if count > 0:
+            if not stored_model:
+                print(
+                    f"[chroma-init] Collection '{COLLECTION_NAME}' has {count} documents "
+                    f"but no embedding_model metadata. Re-embedding to tag with '{EMBEDDING_MODEL}'..."
+                )
+                re_embed_collection(client)
+                return
+
+            print(
+                f"[chroma-init] Collection '{COLLECTION_NAME}' already has data "
+                f"(count={count}, model='{stored_model}'). No drift detected — skipping."
+            )
+            return
+
+    collection = client.get_or_create_collection(
+        name=COLLECTION_NAME,
+        embedding_function=embedding_function,
+        metadata={"embedding_model": EMBEDDING_MODEL},
+    )
 
     data_path = Path("/app/init-scripts/sample_data.json")
     with data_path.open("r", encoding="utf-8") as f:
@@ -66,18 +117,18 @@ def load_sample_data() -> None:
     documents = [item["text"] for item in raw]
     metadatas = [item.get("metadata", {}) for item in raw]
 
-    print(f"[chroma-init] Adding {len(ids)} documents to collection '{COLLECTION_NAME}'.")
+    print(f"[chroma-init] Adding {len(ids)} documents to collection '{COLLECTION_NAME}' with model '{EMBEDDING_MODEL}'.")
     collection.add(ids=ids, documents=documents, metadatas=metadatas)
 
-    # Simple verification query
     test_query = "proof-of-skills marketplace"
     results = collection.query(query_texts=[test_query], n_results=2)
     print(f"[chroma-init] Test query results: {results.get('ids')}")
 
 
 if __name__ == "__main__":
+    print(f"[chroma-init] Configured embedding model: {EMBEDDING_MODEL}")
     print("[chroma-init] Waiting for ChromaDB to be ready...")
     wait_for_chromadb()
-    print("[chroma-init] Loading sample data into ChromaDB...")
+    print("[chroma-init] Loading / verifying data in ChromaDB...")
     load_sample_data()
     print("[chroma-init] Initialization completed successfully.")

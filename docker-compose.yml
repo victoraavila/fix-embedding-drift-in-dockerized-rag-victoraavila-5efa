@@ -24,6 +24,7 @@ services:
     environment:
       - CHROMA_HOST=chromadb
       - CHROMA_PORT=8000
+      - EMBEDDING_MODEL=${EMBEDDING_MODEL:-sentence-transformers/all-mpnet-base-v2}
     volumes:
       - ./init-scripts:/app/init-scripts:ro
     command: python /app/init-scripts/load_data.py
@@ -42,8 +43,10 @@ services:
     environment:
       - CHROMA_HOST=chromadb
       - CHROMA_PORT=8000
+      - EMBEDDING_MODEL=${EMBEDDING_MODEL:-sentence-transformers/all-mpnet-base-v2}
     volumes:
       - ./src:/app/src:ro
+      - ./scripts:/app/scripts:ro
     restart: unless-stopped
 
 volumes:
